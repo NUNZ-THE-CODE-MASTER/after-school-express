@@ -4,8 +4,8 @@ CST3144 back-end: Node.js, Express.js, and the native MongoDB driver (no Mongoos
 
 ## Links (fill these in before submission)
 
-- GitHub repository: `https://github.com/YOUR_USERNAME/after-school-express`
-- Render lessons route: `https://YOUR_STUDENT_NUMBER-after-school.onrender.com/lessons`
+- GitHub repository: `https://github.com/NUNZ-THE-CODE-MASTER/after-school-express`
+- Render lessons route: `https://M00956871-after-school.onrender.com/lessons`
 
 ## Local setup
 
