@@ -1,17 +1,27 @@
-# After School Classes — Express.js API
+# After School Classes - Express.js API
 
-CST3144 back-end: Node.js, Express.js, and the native MongoDB driver (no Mongoose).
+CST3144 back-end: Node.js, Express.js and the native MongoDB driver (no Mongoose). Data is stored in MongoDB Atlas and the API is hosted on Render.
 
-## Links (fill these in before submission)
+## Links
 
-- GitHub repository: `https://github.com/NUNZ-THE-CODE-MASTER/after-school-express`
-- Render lessons route: `https://M00956871-after-school.onrender.com/lessons`
+- GitHub repository: https://github.com/NUNZ-THE-CODE-MASTER/after-school-express
+- Render lessons route: https://m00956871-after-school.onrender.com/lessons
+- Front-end repository: https://github.com/NUNZ-THE-CODE-MASTER/after-school-vue
+- Front-end (GitHub Pages): https://NUNZ-THE-CODE-MASTER.github.io/after-school-vue/
+
+## Project structure
+
+- `server.js` - Express server: middleware, routes and MongoDB connection
+- `seed.js` - fills the `teachers` and `lessons` collections
+- `public/images/` - lesson images, served at `/images`
+- `.env.example` - template for the environment variables
+- `render.yaml` - Render service configuration
 
 ## Local setup
 
 1. Copy `.env.example` to `.env`.
-2. Put your MongoDB Atlas connection string in `MONGODB_URI`.
-3. Install and seed:
+2. Put your MongoDB Atlas connection string in `MONGODB_URI`. `DB_NAME` defaults to `afterSchool`. Never commit `.env`.
+3. Install, seed and start:
 
 ```
 npm install
@@ -19,7 +29,25 @@ npm run seed
 npm start
 ```
 
-The API listens on `http://localhost:3000`.
+The API listens on `http://localhost:3000` (or on `PORT` if it is set).
+
+`npm run seed` deletes every document in `teachers`, `lessons` and `orders`, then inserts 5 teachers and 12 lessons with 5 spaces each. Run it again to reset the data.
+
+## Database (MongoDB Atlas, database `afterSchool`)
+
+| Collection | Fields |
+| --- | --- |
+| `lessons` | `topic`, `location`, `price`, `space`, `image`, `teacherId` |
+| `orders` | `name`, `phone`, `lessons` (array of `{ lessonId, spaces }`), `createdAt` |
+| `teachers` | `firstName`, `lastName` |
+
+Each lesson points to its teacher through `teacherId`, so one teacher can teach several lessons.
+
+## Middleware
+
+- **Logger:** prints `[ISO timestamp] METHOD url` for every request to the console. On Render these lines appear in the service logs, with timestamps in UTC.
+- **Static images:** `express.static` serves `public/images` at `/images`. If the file does not exist, the next handler returns a 404 with a JSON error message.
+- `cors()` allows the GitHub Pages site to call the API, and `express.json()` parses JSON request bodies.
 
 ## Routes
 
@@ -27,23 +55,34 @@ The API listens on `http://localhost:3000`.
 | --- | --- | --- |
 | GET | `/lessons` | All lessons |
 | GET | `/lessons?teacherId=` | Lessons taught by one teacher |
-| GET | `/search?q=` | Search topic, location, price, spaces |
-| POST | `/orders` | Save an order |
-| PUT | `/lessons/:id` | Update any lesson field |
+| GET | `/search?q=` | Case-insensitive search across topic, location, price and spaces |
+| POST | `/orders` | Save an order (201 on success, 400 if name, phone or lessons are missing) |
+| PUT | `/lessons/:id` | Update any lesson field, for example `{ "space": 3 }` (400 for an invalid id, 404 if not found) |
 | GET | `/teachers` | All teachers |
-| GET | `/enrolment/:lessonid` | Spaces already purchased |
-| GET | `/images/:filename` | Lesson image, or JSON error if missing |
+| GET | `/enrolment/:lessonid` | Spaces already purchased for a lesson: `{ lessonId, enrolment }` |
+| GET | `/images/:filename` | Lesson image, or a 404 JSON error if it does not exist |
 
-## Render.com hosting
+Example order body:
 
-1. Push this folder to its own GitHub repository (at least 10 commits).
-2. Create a Web Service on Render from that repo.
-3. Name the service so the URL includes your student number, for example `M001234567-after-school`.
-4. Set environment variables: `MONGODB_URI`, `DB_NAME=afterSchool`.
-5. Build command: `npm install`. Start command: `npm start`.
-6. After deploy, run seed once (Render shell, or run `npm run seed` locally against the same Atlas database).
+```
+{
+  "name": "Jane Parent",
+  "phone": "+23057123456",
+  "lessons": [{ "lessonId": "<lesson _id>", "spaces": 1 }]
+}
+```
+
+## Render hosting
+
+- The API runs as a Render Web Service named `m00956871-after-school`, so the URL includes the student number.
+- Environment variables: `MONGODB_URI` and `DB_NAME=afterSchool`.
+- Build command: `npm install`. Start command: `npm start`.
+- Each push to `main` redeploys the service.
+- The free tier sleeps when idle, so the first request after a break can take about a minute.
+- The seed is run locally against the same Atlas database (`npm run seed`).
 
 ## Demo notes
 
-- Logger output appears in the Render logs: method, URL, and timestamp for every request.
-- Request a missing image such as `/images/does-not-exist.png` to show the error JSON.
+- Logger output appears in the Render logs: timestamp, method and URL for every request.
+- Request a missing image such as `/images/does-not-exist.png` to show the JSON error.
+- Request a valid image such as `/images/art.svg` to show the file being served.
